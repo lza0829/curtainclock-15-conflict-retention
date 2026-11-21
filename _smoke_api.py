@@ -1,5 +1,9 @@
 # -*- coding: utf-8 -*-
-"""0-1 API smoke against running server on 11100."""
+"""0-1 API smoke against running server on 11100.
+
+臂 A 追加核对：一次冲突失败 → 一条新事件行；总览计数 == /conflicts 行数；
+409 回执带 conflict_ids；再失败一次 → 列表 +1 且计数同步 +1。
+"""
 from __future__ import annotations
 
 import json
@@ -54,13 +58,43 @@ def main() -> None:
         },
     )
     assert st == 200, created
+
+    before_n = call("GET", "/conflicts/count")[1]["conflict_count"]
+
     st, conflict = call("POST", "/leases/open", {"window_code": "W-DIM-DUP"})
     assert st == 409, conflict
-    print("conflict", conflict)
+    receipt = conflict["detail"]
+    print("conflict receipt", receipt)
+    assert isinstance(receipt, dict) and receipt["conflict_ids"], "回执须带新事件 id"
+
+    # 连败第二次：追加臂下应再 +1 行，计数同步
+    st, conflict2 = call("POST", "/leases/open", {"window_code": "W-DIM-DUP"})
+    assert st == 409, conflict2
+
+    st, rows = call("GET", "/conflicts")
+    st, cnt = call("GET", "/conflicts/count")
+    st, win_cnt = call("GET", "/conflicts/count?window_code=W-DIM-DUP")
+    st, win_rows = call("GET", "/conflicts?window_code=W-DIM-DUP")
+    st, dash2 = call("GET", "/dashboard")
+    print("list/global/window counts:", len(rows), cnt["conflict_count"], win_cnt["conflict_count"])
+
+    # 同源铁律：总览 == 列表行数 == count 端点；过滤口径自洽
+    assert dash2["conflict_count"] == len(rows) == cnt["conflict_count"]
+    assert win_cnt["conflict_count"] == len(win_rows) == 2
+    assert cnt["conflict_count"] == before_n + 2, "连败两次必须追加两行"
+    assert all(r["window_code"] == "W-DIM-DUP" for r in win_rows)
+
+    st, audit = call("GET", "/audit?window_code=W-DIM-DUP")
+    assert st == 200 and len(audit) == 2 and all(a["result"] == "conflict" for a in audit)
+    print("audit for W-DIM-DUP:", len(audit), "rows")
 
     st, closed = call("POST", "/leases/close", {"lease_no": open1["lease_no"]})
     assert st == 200, closed
     print("closed", closed)
+
+    # 关窗/成功路径不得偷删事件
+    st, cnt_after = call("GET", "/conflicts/count")
+    assert cnt_after["conflict_count"] == cnt["conflict_count"], "成功关窗不得删历史冲突"
     print("SMOKE OK")
 
 

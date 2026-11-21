@@ -35,7 +35,16 @@ export default function Sessions() {
       setMsg(`已开窗，租约 ${r.lease_no}；在途租约 ${r.open_leases}`);
       await load();
     } catch (e) {
-      setErr(e.message);
+      const p = e.payload;
+      if (p && p.conflict_ids?.length) {
+        // 租约开窗回执：新事件只追加，计数与冲突页/总览同源
+        setErr(
+          `${e.message}｜已落冲突事件 #${p.conflict_ids.join(", #")}；` +
+            `该批窗累计 ${p.window_conflict_count} 行，全局 ${p.conflict_count} 行`
+        );
+      } else {
+        setErr(e.message);
+      }
       await load();
     }
   }

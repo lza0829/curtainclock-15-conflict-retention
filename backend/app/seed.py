@@ -1,12 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
-
 from app.db import connect, init_db
-
-
-def _now() -> str:
-    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
 def seed_if_empty() -> None:
@@ -52,14 +46,7 @@ def seed_if_empty() -> None:
                 "VALUES(?,?,?,?,?,?,?,?, 'draft')",
                 row,
             )
-        conn.execute(
-            "INSERT INTO watermarks(key, value, updated_at) VALUES('open_leases', 0, ?)",
-            (_now(),),
-        )
-        conn.execute(
-            "INSERT INTO watermarks(key, value, updated_at) VALUES('conflict_count', 0, ?)",
-            (_now(),),
-        )
+        # 臂 A：不再播种 conflict_count / open_leases 水位——计数一律由事件表/租约表现算
         conn.execute(
             "INSERT INTO settings(key, value) VALUES('conflict_mode', 'reject')",
         )

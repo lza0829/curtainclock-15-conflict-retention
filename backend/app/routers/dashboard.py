@@ -3,6 +3,7 @@ from __future__ import annotations
 from fastapi import APIRouter
 
 from app.db import connect
+from app.services import conflict_store
 
 router = APIRouter(tags=["dashboard"])
 
@@ -15,12 +16,12 @@ def dashboard():
             "SELECT value FROM settings WHERE key='fixture_day'"
         ).fetchone()
         day = day_row["value"] if day_row else None
+        # 臂 A 口径：全部计数由事实表/事件表现算，与各列表页同源，杜绝双写漂移
         open_leases = conn.execute(
-            "SELECT value FROM watermarks WHERE key='open_leases'"
-        ).fetchone()
-        conflicts = conn.execute(
-            "SELECT value FROM watermarks WHERE key='conflict_count'"
-        ).fetchone()
+            "SELECT COUNT(*) c FROM leases WHERE status='open'"
+        ).fetchone()["c"]
+        # 与 /conflicts、按批窗过滤共用同一读函数
+        conflict_n = conflict_store.count_conflicts(conn)
         live_n = conn.execute(
             "SELECT COUNT(*) c FROM windows WHERE status='live'"
         ).fetchone()["c"]
@@ -29,8 +30,8 @@ def dashboard():
         ).fetchone()["c"]
         return {
             "fixture_day": day,
-            "open_leases": int(open_leases["value"]) if open_leases else 0,
-            "conflict_count": int(conflicts["value"]) if conflicts else 0,
+            "open_leases": int(open_leases),
+            "conflict_count": conflict_n,
             "live_sessions": live_n,
             "draft_sessions": draft_n,
         }

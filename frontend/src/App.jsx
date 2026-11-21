@@ -4,6 +4,7 @@ import Sessions from "./pages/Sessions.jsx";
 import Resources from "./pages/Resources.jsx";
 import Leases from "./pages/Leases.jsx";
 import Conflicts from "./pages/Conflicts.jsx";
+import Audit from "./pages/Audit.jsx";
 
 export default function App() {
   return (
@@ -11,7 +12,7 @@ export default function App() {
       <header className="hero">
         <h1 className="brand">幕窗钟</h1>
         <p>
-          批窗就绪后开窗占用算力槽与执行器，关窗释放；冲突写入水位，数字同源可核。
+          批窗就绪后开窗占用算力槽与执行器，关窗释放；冲突事件只追加，计数与列表同源可核。
         </p>
       </header>
 
@@ -23,6 +24,7 @@ export default function App() {
         <NavLink to="/resources">算力槽与执行器</NavLink>
         <NavLink to="/leases">租约</NavLink>
         <NavLink to="/conflicts">冲突</NavLink>
+        <NavLink to="/audit">审计</NavLink>
       </nav>
 
       <Routes>
@@ -31,6 +33,7 @@ export default function App() {
         <Route path="/resources" element={<Resources />} />
         <Route path="/leases" element={<Leases />} />
         <Route path="/conflicts" element={<Conflicts />} />
+        <Route path="/audit" element={<Audit />} />
       </Routes>
     </div>
   );

@@ -179,6 +179,16 @@ button:disabled {
   cursor: not-allowed;
 }
 
+input {
+  font-family: inherit;
+  font-size: 14px;
+  padding: 7px 10px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: #fbfaf6;
+  color: var(--ink);
+}
+
 .tag {
   display: inline-block;
   padding: 2px 8px;
